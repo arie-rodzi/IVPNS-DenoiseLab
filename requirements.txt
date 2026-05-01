@@ -1,7 +1,8 @@
 streamlit
 numpy
-pillow
+pandas
 scipy
 scikit-image
-pandas
 matplotlib
+pillow
+bm3d
