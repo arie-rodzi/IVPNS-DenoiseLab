@@ -293,18 +293,28 @@ def aggregate_ivpns(components, operator="IVPNSWA", window_size=3, sigma=1.0):
 
 
 def defuzzify_score(agg):
-    raw_score = (
-        agg["alpha_L"] + agg["alpha_U"]
-        - agg["beta_L"] - agg["beta_U"]
-        - agg["gamma_L"] - agg["gamma_U"]
-    ) / 3.0
+    # Midpoint interval components
+    alpha_m = (agg["alpha_L"] + agg["alpha_U"]) / 2.0
+    beta_m  = (agg["beta_L"]  + agg["beta_U"])  / 2.0
+    gamma_m = (agg["gamma_L"] + agg["gamma_U"]) / 2.0
 
-    direct_clipped = np.clip(raw_score, 0, 1)
-    normalized = np.clip((raw_score + 2.0 / 3.0) / (4.0 / 3.0), 0, 1)
-    alpha_dominance = np.clip((agg["alpha_L"] + agg["alpha_U"]) / 2.0, 0, 1)
+    # Stable IVPNS reconstruction score
+    # Truth is rewarded, falsity is penalized softly, indeterminacy controls smoothing
+    score_ivpns = (
+        alpha_m * (1.0 - 0.35 * beta_m) +
+        0.15 * (1.0 - gamma_m)
+    )
+
+    # Normalize safely to [0, 1]
+    score_ivpns = np.clip(score_ivpns, 0, 1)
+
+    # For compatibility with existing app variables
+    raw_score = score_ivpns
+    direct_clipped = score_ivpns
+    normalized = score_ivpns
+    alpha_dominance = alpha_m
 
     return raw_score, direct_clipped, normalized, alpha_dominance
-
 
 def reconstruct_image(score_01):
     return np.clip(255.0 * score_01, 0, 255).astype(np.uint8)
