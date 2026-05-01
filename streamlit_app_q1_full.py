@@ -347,29 +347,32 @@ def ivpns_score(agg, eta=0.4, kappa=0.2):
     return np.clip(score, 0, 1), alpha_m, beta_m, gamma_m
 
 
-def adaptive_refinement(g, score, window_size=3, omega_min=0.25, omega_max=0.70):
-    # Brightness calibration: prevents IVPNS score from becoming too dark
-    score_mean = np.mean(score)
-    g_mean = np.mean(g)
-    score_calibrated = score * (g_mean / (score_mean + 1e-8))
-    score_calibrated = np.clip(score_calibrated, 0, 1)
-
-    # Local structure detection
+def adaptive_refinement(g, score, window_size=3, omega_min=0.15, omega_max=0.85):
+    # Local smoothing candidates
     local_mean = uniform_filter(g, size=window_size)
+    local_median = median_filter(g, size=window_size)
+
+    # Edge/texture detector
+    edge_strength = np.abs(g - local_mean)
     local_var = uniform_filter((g - local_mean) ** 2, size=window_size)
-    edge_strength = np.abs(g - local_mean)
 
-    # More IVPNS smoothing in flat regions, less smoothing near edges/textures
-    omega = omega_max - 1.5 * edge_strength - 2.0 * np.sqrt(local_var)
-    omega = np.clip(omega, omega_min, omega_max)
+    # Use IVPNS score only as guidance, not direct image replacement
+    uncertainty = np.clip(np.abs(score - g), 0, 1)
 
-    refined = omega * score_calibrated + (1.0 - omega) * g
-    return np.clip(refined, 0, 1), omega
-    local_mean = uniform_filter(g, size=window_size)
-    edge_strength = np.abs(g - local_mean)
-    omega = np.clip(omega_max - omega_max * edge_strength, omega_min, omega_max)
-    refined = omega * score + (1.0 - omega) * g
-    return np.clip(refined, 0, 1), omega
+    # Strong smoothing in flat/noisy areas, weak smoothing at edges
+    smooth_weight = omega_max - 2.0 * edge_strength - 2.5 * np.sqrt(local_var)
+    smooth_weight = np.clip(smooth_weight, omega_min, omega_max)
+
+    # Hybrid denoising: median preserves edges, mean reduces Gaussian noise
+    smooth_base = 0.60 * local_median + 0.40 * local_mean
+
+    # IVPNS-guided correction
+    refined = smooth_weight * smooth_base + (1.0 - smooth_weight) * g
+
+    # Small score-guided stabilization only
+    refined = 0.85 * refined + 0.15 * score
+
+    return np.clip(refined, 0, 1), smooth_weight
 
 
 def process_ivpns(
