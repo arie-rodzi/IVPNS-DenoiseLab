@@ -370,7 +370,7 @@ def adaptive_refinement(g, score, window_size=3, omega_min=0.15, omega_max=0.85)
     refined = smooth_weight * smooth_base + (1.0 - smooth_weight) * g
 
     # Small score-guided stabilization only
-    refined = 0.85 * refined + 0.15 * score
+    refined = 0.75 * refined + 0.25 * score
 
     return np.clip(refined, 0, 1), smooth_weight
 
