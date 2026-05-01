@@ -660,29 +660,43 @@ def images_to_zip_bytes(image_dict):
 def run_ablation(reference, noisy, base_params):
     variants = {}
 
-    full, _ = process_ivpns(noisy, operator=base_params["operator"], **base_params["ivpns"])
+    ivpns_full = base_params["ivpns"].copy()
+
+    full, _ = process_ivpns(
+        noisy,
+        operator=base_params["operator"],
+        **ivpns_full
+    )
     variants["Full proposed model"] = full
 
+    ivpns_no_truth = ivpns_full.copy()
+    ivpns_no_truth["use_truth"] = False
     no_truth, _ = process_ivpns(
         noisy,
         operator=base_params["operator"],
-        use_truth=False,
-        use_refinement=True,
-        **base_params["ivpns"]
+        **ivpns_no_truth
     )
     variants["Without truth-dominance"] = no_truth
 
+    ivpns_no_refine = ivpns_full.copy()
+    ivpns_no_refine["use_refinement"] = False
     no_refine, _ = process_ivpns(
         noisy,
         operator=base_params["operator"],
-        use_truth=True,
-        use_refinement=False,
-        **base_params["ivpns"]
+        **ivpns_no_refine
     )
     variants["Without adaptive refinement"] = no_refine
 
-    wa, _ = process_ivpns(noisy, operator="IVPNSWA", **base_params["ivpns"])
-    wg, _ = process_ivpns(noisy, operator="IVPNSWG", **base_params["ivpns"])
+    wa, _ = process_ivpns(
+        noisy,
+        operator="IVPNSWA",
+        **ivpns_full
+    )
+    wg, _ = process_ivpns(
+        noisy,
+        operator="IVPNSWG",
+        **ivpns_full
+    )
 
     variants["IVPNSWA only"] = wa
     variants["IVPNSWG only"] = wg
