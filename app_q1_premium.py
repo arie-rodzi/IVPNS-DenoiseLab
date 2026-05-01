@@ -559,7 +559,23 @@ else:
 
 local_mean_01 = uniform_filter(g, size=window_size)
 
-score_refined = 0.75 * local_mean_01 + 0.25 * score_used
+# Edge-preserving adaptive hybrid (final version)
+
+local_mean_01 = uniform_filter(g, size=window_size)
+
+# detect edge / structure (very important!)
+edge_strength = np.abs(g - local_mean_01)
+
+# weight: more smoothing in flat region, less smoothing at edges
+adaptive_weight = np.clip(0.80 - 0.60 * edge_strength, 0.40, 0.80)
+
+score_refined = (
+    adaptive_weight * local_mean_01 +
+    (1.0 - adaptive_weight) * score_used
+)
+
+score_refined = np.clip(score_refined, 0, 1)
+output_255 = reconstruct_image(score_refined)
 
 score_refined = np.clip(score_refined, 0, 1)
 output_255 = reconstruct_image(score_refined)
