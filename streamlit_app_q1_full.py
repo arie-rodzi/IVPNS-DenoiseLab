@@ -867,7 +867,7 @@ params = {
         "eta": eta,
         "kappa": kappa,
         "delta1": delta1,
-        "delta2": delta2,
+       "delta2": delta2,
         "delta3": delta3,
         "use_truth": use_truth,
         "use_refinement": use_refinement,
@@ -875,6 +875,12 @@ params = {
         "omega_max": omega_max
     }
 }
+
+# Safety fallback if operator widget is missing or not executed
+try:
+    operator
+except NameError:
+    operator = "IVPNSWA"
 
 base_params = {
     "operator": operator,
