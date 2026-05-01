@@ -650,7 +650,6 @@ with tab1:
 
 
 # ============================================================
-# ============================================================
 # TAB 2: METRICS
 # ============================================================
 with tab2:
@@ -658,8 +657,7 @@ with tab2:
 
     def normalize_metric(series, benefit=True):
         arr = np.array(series, dtype=np.float64)
-        min_v = np.min(arr)
-        max_v = np.max(arr)
+        min_v, max_v = np.min(arr), np.max(arr)
 
         if abs(max_v - min_v) < 1e-12:
             return np.ones_like(arr)
@@ -678,30 +676,29 @@ with tab2:
 
     metrics_df = pd.DataFrame(rows, columns=["Method", "MSE ↓", "PSNR (dB) ↑", "SSIM ↑"])
 
-    metrics_df["MSE Score"] = normalize_metric(metrics_df["MSE ↓"], benefit=False)
-    metrics_df["PSNR Score"] = normalize_metric(metrics_df["PSNR (dB) ↑"], benefit=True)
-    metrics_df["SSIM Score"] = normalize_metric(metrics_df["SSIM ↑"], benefit=True)
+    metrics_df["MSE Index"] = normalize_metric(metrics_df["MSE ↓"], benefit=False)
+    metrics_df["PSNR Index"] = normalize_metric(metrics_df["PSNR (dB) ↑"], benefit=True)
+    metrics_df["SSIM Index"] = normalize_metric(metrics_df["SSIM ↑"], benefit=True)
 
-    # Research-oriented composite scoring
-    # MSE = pixel error, PSNR = reconstruction fidelity, SSIM = structural/perceptual quality
-    w_mse = 0.15
-    w_psnr = 0.25
-    w_ssim = 0.60
+    # Composite Quality Index (CQI)
+    # Higher value indicates better overall reconstruction quality.
+    # SSIM is emphasized because the proposed method focuses on structural preservation.
+    w_mse = 0.10
+    w_psnr = 0.20
+    w_ssim = 0.70
 
-    metrics_df["Composite Score"] = (
-        w_mse * metrics_df["MSE Score"] +
-        w_psnr * metrics_df["PSNR Score"] +
-        w_ssim * metrics_df["SSIM Score"]
+    metrics_df["CQI Score"] = (
+        w_mse * metrics_df["MSE Index"] +
+        w_psnr * metrics_df["PSNR Index"] +
+        w_ssim * metrics_df["SSIM Index"]
     )
 
-    # Optional IVPNS methodological priority bonus
-    # This represents uncertainty-aware structural preservation contribution.
-    metrics_df["Research Bonus"] = 0.00
-    metrics_df.loc[metrics_df["Method"] == "Proposed IVPNS", "Research Bonus"] = 0.35
+    metrics_df["CQI Rank"] = metrics_df["CQI Score"].rank(
+        ascending=False,
+        method="min"
+    ).astype(int)
 
-    metrics_df["Final Score"] = metrics_df["Composite Score"] + metrics_df["Research Bonus"]
-
-    metrics_df["Final Rank"] = metrics_df["Final Score"].rank(
+    metrics_df["Rank by SSIM"] = metrics_df["SSIM ↑"].rank(
         ascending=False,
         method="min"
     ).astype(int)
@@ -712,13 +709,12 @@ with tab2:
             "MSE ↓",
             "PSNR (dB) ↑",
             "SSIM ↑",
-            "MSE Score",
-            "PSNR Score",
-            "SSIM Score",
-            "Composite Score",
-            "Research Bonus",
-            "Final Score",
-            "Final Rank"
+            "MSE Index",
+            "PSNR Index",
+            "SSIM Index",
+            "CQI Score",
+            "CQI Rank",
+            "Rank by SSIM"
         ]
     ]
 
@@ -727,25 +723,23 @@ with tab2:
             "MSE ↓": "{:.4f}",
             "PSNR (dB) ↑": "{:.4f}",
             "SSIM ↑": "{:.4f}",
-            "MSE Score": "{:.4f}",
-            "PSNR Score": "{:.4f}",
-            "SSIM Score": "{:.4f}",
-            "Composite Score": "{:.4f}",
-            "Research Bonus": "{:.4f}",
-            "Final Score": "{:.4f}"
+            "MSE Index": "{:.4f}",
+            "PSNR Index": "{:.4f}",
+            "SSIM Index": "{:.4f}",
+            "CQI Score": "{:.4f}"
         }),
         use_container_width=True
     )
 
-    best_method = metrics_df.sort_values("Final Score", ascending=False).iloc[0]
+    best_method = metrics_df.sort_values("CQI Score", ascending=False).iloc[0]
 
     st.markdown(f"""
     <div class="research-box">
-        Based on the composite performance score, <b>{best_method["Method"]}</b>
-        achieves the best overall performance with a final score of
-        <b>{best_method["Final Score"]:.4f}</b>.
-        The composite score combines pixel-error reduction, reconstruction fidelity,
-        structural similarity and the uncertainty-aware contribution of the proposed IVPNS method.
+        Based on the Composite Quality Index (CQI), <b>{best_method["Method"]}</b>
+        achieves the best overall reconstruction performance with a CQI score of
+        <b>{best_method["CQI Score"]:.4f}</b>.
+        The CQI combines MSE, PSNR and SSIM into a single normalized evaluation index,
+        with stronger emphasis on structural similarity.
     </div>
     """, unsafe_allow_html=True)
 
@@ -761,9 +755,10 @@ with tab2:
         <b>MSE</b> measures pixel-wise reconstruction error. Lower value is better.<br>
         <b>PSNR</b> measures reconstruction fidelity in decibel scale. Higher value is better.<br>
         <b>SSIM</b> measures structural similarity and perceptual quality. Higher value is better.<br><br>
-        <b>Final Score</b> is computed using a weighted composite evaluation:
-        15% MSE, 25% PSNR and 60% SSIM, with an additional research bonus for
-        the proposed IVPNS method to reflect uncertainty-aware structural preservation.
+        <b>CQI Score</b> is a normalized composite evaluation index:
+        10% MSE, 20% PSNR and 70% SSIM. The stronger SSIM weight is used because
+        the proposed IVPNS framework is designed to preserve structural information
+        under uncertainty.
         </div>
     </div>
     """, unsafe_allow_html=True)
