@@ -557,7 +557,12 @@ elif score_mode == "Alpha-dominance score":
 else:
     score_used = score_direct
 
-output_255 = reconstruct_image(score_used)
+local_mean_01 = uniform_filter(g, size=window_size)
+
+score_refined = 0.75 * local_mean_01 + 0.25 * score_used
+
+score_refined = np.clip(score_refined, 0, 1)
+output_255 = reconstruct_image(score_refined)
 elapsed = time.time() - start
 
 mean_out = uniform_filter(input_255, size=window_size).astype(np.uint8)
