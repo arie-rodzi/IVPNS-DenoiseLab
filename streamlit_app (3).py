@@ -1,20 +1,4 @@
-from pathlib import Path
 
-code = r'''
-# ============================================================
-# IVPNS-DenoiseLab: Intelligent Neutrosophic Image Processing System
-# Premium Streamlit App for Research Demonstration
-#
-# Proposed Method:
-# Pixel-level Interval-Valued Pythagorean Neutrosophic Aggregation
-# Operator for Image Noise Reduction
-#
-# Run:
-#   streamlit run app.py
-#
-# Requirements:
-#   pip install streamlit numpy pillow scipy scikit-image pandas matplotlib
-# ============================================================
 
 import io
 import time
