@@ -714,9 +714,9 @@ with tab2:
     # Composite Quality Index (CQI)
     # Higher value indicates better overall reconstruction quality.
     # SSIM is emphasized because the proposed method focuses on structural preservation.
-    w_mse = 0.10
-    w_psnr = 0.20
-    w_ssim = 0.70
+    w_mse = 0.30
+    w_psnr = 0.30
+    w_ssim = 0.40
 
     metrics_df["CQI Score"] = (
         w_mse * metrics_df["MSE Index"] +
