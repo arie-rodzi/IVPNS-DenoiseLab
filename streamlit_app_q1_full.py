@@ -348,6 +348,23 @@ def ivpns_score(agg, eta=0.4, kappa=0.2):
 
 
 def adaptive_refinement(g, score, window_size=3, omega_min=0.25, omega_max=0.70):
+    # Brightness calibration: prevents IVPNS score from becoming too dark
+    score_mean = np.mean(score)
+    g_mean = np.mean(g)
+    score_calibrated = score * (g_mean / (score_mean + 1e-8))
+    score_calibrated = np.clip(score_calibrated, 0, 1)
+
+    # Local structure detection
+    local_mean = uniform_filter(g, size=window_size)
+    local_var = uniform_filter((g - local_mean) ** 2, size=window_size)
+    edge_strength = np.abs(g - local_mean)
+
+    # More IVPNS smoothing in flat regions, less smoothing near edges/textures
+    omega = omega_max - 1.5 * edge_strength - 2.0 * np.sqrt(local_var)
+    omega = np.clip(omega, omega_min, omega_max)
+
+    refined = omega * score_calibrated + (1.0 - omega) * g
+    return np.clip(refined, 0, 1), omega
     local_mean = uniform_filter(g, size=window_size)
     edge_strength = np.abs(g - local_mean)
     omega = np.clip(omega_max - omega_max * edge_strength, omega_min, omega_max)
@@ -734,21 +751,10 @@ with st.sidebar:
 
     lam = st.slider("λ — indeterminacy control", 0.0, 1.0, 0.50, 0.05)
     eps = st.slider("ε — interval uncertainty width", 0.00, 0.25, 0.05, 0.01)
-    window_size = st.selectbox("Neighbourhood window size", [3, 5, 7], index=0)
-    sigma = st.slider("Spatial weight σ", 0.3, 5.0, 1.0, 0.1)
-
-    operator = st.radio(
-        "Primary aggregation operator",
-        ["IVPNSWA", "IVPNSWG"],
-        index=0,
-        captions=[
-            "Weighted averaging: stable smoothing",
-            "Weighted geometric: edge-sensitive fusion"
-        ]
-    )
-
-    eta = st.slider("η — indeterminacy penalty", 0.00, 1.00, 0.40, 0.05)
-    kappa = st.slider("κ — falsity suppression weight", 0.00, 1.00, 0.20, 0.05)
+    window_size = st.selectbox("Neighbourhood window size", [3, 5, 7], index=1)
+    sigma = st.slider("Spatial weight σ", 0.3, 5.0, 1.5, 0.1)
+    eta = st.slider("η — indeterminacy penalty", 0.00, 1.00, 0.15, 0.05)
+    kappa = st.slider("κ — falsity suppression weight", 0.00, 1.00, 0.30, 0.05)
 
     st.markdown("### 🔧 Truth-Dominance")
     use_truth = st.checkbox("Use truth-dominance adjustment", value=True)
@@ -758,8 +764,8 @@ with st.sidebar:
 
     st.markdown("### 🧩 Adaptive Refinement")
     use_refinement = st.checkbox("Use adaptive refinement", value=True)
-    omega_min = st.slider("ω minimum", 0.00, 1.00, 0.25, 0.05)
-    omega_max = st.slider("ω maximum", 0.00, 1.00, 0.70, 0.05)
+    omega_min = st.slider("ω minimum", 0.00, 1.00, 0.15, 0.05)
+    omega_max = st.slider("ω maximum", 0.00, 1.00, 0.85, 0.05)
 
     st.markdown("---")
     st.markdown("### 🧪 Baseline Settings")
