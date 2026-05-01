@@ -35,7 +35,7 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 from scipy.ndimage import uniform_filter, median_filter, convolve
 from skimage.metrics import mean_squared_error, peak_signal_noise_ratio, structural_similarity
-from skimage.restoration import denoise_bilateral, denoise_nl_means, estimate_sigma
+from skimage.restoration import denoise_bilateral, denoise_nl_means
 import matplotlib.pyplot as plt
 
 try:
@@ -431,7 +431,33 @@ def bilateral_filter_img(img_255, sigma_color=0.06, sigma_spatial=5):
     return np.clip(out * 255, 0, 255).astype(np.uint8)
 
 
+def robust_noise_sigma(img01):
+    """
+    Manual noise estimator to avoid estimate_sigma ImportError on Streamlit Cloud.
+    """
+    img01 = img01.astype(np.float64)
+    local_mean = uniform_filter(img01, size=3)
+    residual = img01 - local_mean
+    mad = np.median(np.abs(residual - np.median(residual)))
+    sigma_est = 1.4826 * mad
+    return float(np.clip(sigma_est, 0.01, 0.20))
+
+
 def nlm_filter_img(img_255, patch_size=5, patch_distance=6):
+    img01 = np.clip(img_255 / 255.0, 0, 1)
+    sigma_est = robust_noise_sigma(img01)
+    h = max(0.03, 1.15 * sigma_est)
+
+    out = denoise_nl_means(
+        img01,
+        h=h,
+        patch_size=patch_size,
+        patch_distance=patch_distance,
+        fast_mode=True,
+        channel_axis=None
+    )
+
+    return np.clip(out * 255, 0, 255).astype(np.uint8)
     img01 = img_255 / 255.0
     try:
         sigma_est = float(np.mean(estimate_sigma(img01, channel_axis=None)))
