@@ -567,7 +567,7 @@ local_mean_01 = uniform_filter(g, size=window_size)
 edge_strength = np.abs(g - local_mean_01)
 
 # weight: more smoothing in flat region, less smoothing at edges
-adaptive_weight = np.clip(0.80 - 0.60 * edge_strength, 0.40, 0.80)
+adaptive_weight = np.clip(0.70 - 0.70 * edge_strength, 0.25, 0.70)
 
 score_refined = (
     adaptive_weight * local_mean_01 +
