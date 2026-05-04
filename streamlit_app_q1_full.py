@@ -1,6 +1,6 @@
 
 # ============================================================
-# IVPNS-DenoiseLab Q1: Batch Research System
+# IVPNS-DenoiseLab: Batch Research System
 # Full Streamlit App for IVPNS Image Denoising Experiments
 #
 # Features:
