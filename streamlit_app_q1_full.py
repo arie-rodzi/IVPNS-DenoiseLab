@@ -49,7 +49,7 @@ except Exception:
 # PAGE CONFIG
 # ============================================================
 st.set_page_config(
-    page_title="IVPNS-DenoiseLab Q1",
+    page_title="IVPNS-DenoiseLab",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
