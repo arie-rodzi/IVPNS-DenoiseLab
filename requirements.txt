@@ -1,8 +1,8 @@
-streamlit
-numpy
-pandas
-scipy
-scikit-image
-matplotlib
-pillow
-bm3d
+streamlit>=1.30
+numpy>=1.24
+pillow>=9.5
+scipy>=1.10
+scikit-image>=0.21
+pandas>=2.0
+matplotlib>=3.7
+bm3d>=4.0    ; python_version >= "3.8"
